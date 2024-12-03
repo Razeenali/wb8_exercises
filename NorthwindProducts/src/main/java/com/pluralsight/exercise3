@@ -1,0 +1,110 @@
+package com.pluralsight;
+
+import java.sql.*;
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+
+        if (args.length != 2) {
+            System.out.println(
+                    "Application needs two arguments to run: " +
+                            "java com.pluralsight.wb2demo2 <username> <password>");
+            System.exit(1);
+        }
+        // get the user name and password from the command line args
+        String username = args[0];
+        String password = args[1];
+
+        Connection connection = null;
+        PreparedStatement pStatement = null;
+        ResultSet results = null;
+        Scanner scanner = new Scanner(System.in);
+
+        try {
+            // load the MySQL Driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            // open a connection to the database
+            connection = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/northwind", username, password);
+
+            int choice;
+            do {
+                // Home screen menu
+                System.out.println("What do you want to do?");
+                System.out.println("1) Display all products");
+                System.out.println("2) Display all customers");
+                System.out.println("0) Exit");
+                System.out.print("Select an option: ");
+                choice = scanner.nextInt();
+                scanner.nextLine();
+
+                switch (choice) {
+                    case 1:
+                        // Display all products
+                        pStatement = connection.prepareStatement("SELECT * FROM northwind.products;");
+                        results = pStatement.executeQuery();
+                        while (results.next()) {
+                            int productID = results.getInt("ProductID");
+                            String product = results.getString("ProductName");
+                            double price = results.getDouble("UnitPrice");
+                            int stock = results.getInt("UnitsInStock");
+
+                            System.out.printf("Product ID: %d \nName: %s\nPrice: %.2f\nStock: %d\n", productID, product, price, stock);
+                            System.out.println("-------------------------------------------");
+                        }
+                        break;
+
+                    case 2:
+                        // Display all customers
+                        pStatement = connection.prepareStatement("SELECT ContactName, CompanyName, City, Country, Phone FROM northwind.customers ORDER BY Country;");
+                        results = pStatement.executeQuery();
+                        while (results.next()) {
+                            String contactName = results.getString("ContactName");
+                            String companyName = results.getString("CompanyName");
+                            String city = results.getString("City");
+                            String country = results.getString("Country");
+                            String phone = results.getString("Phone");
+
+                            System.out.printf("Contact Name: %s\nCompany Name: %s\nCity: %s\nCountry: %s\nPhone: %s\n", contactName, companyName, city, country, phone);
+                            System.out.println("-------------------------------------------");
+                        }
+                        break;
+
+                    case 0:
+                        System.out.println("Exiting application...");
+                        break;
+
+                    default:
+                        System.out.println("Invalid option. Please try again.");
+                }
+
+            } while (choice != 0);
+
+        } catch (ClassNotFoundException e) {
+            System.out.println("There was an error finding a class");
+            e.printStackTrace();
+
+        } catch (SQLException e) {
+            System.out.println("There was a SQL issue");
+            e.printStackTrace();
+
+        } finally {
+            try {
+                if (results != null) {
+                    results.close();
+                }
+                if (pStatement != null) {
+                    pStatement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                System.out.println("Error closing resources");
+                e.printStackTrace();
+            }
+        }
+    }
+}
